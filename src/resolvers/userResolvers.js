@@ -65,8 +65,8 @@ const userResolvers = {
 
   // ── Field resolvers ───────────────────────────────────────────────
   User: {
-    profile:      (parent) => Profile.findOne({ user: parent._id || parent.id }),
-    subscription: (parent) => Subscription.findOne({ user: parent._id || parent.id }),
+    profile:      (parent) => Profile.findOne({ user: parent._id || parent.id }).exec(),
+    subscription: (parent) => Subscription.findOne({ user: parent._id || parent.id }).exec(),
   },
 
   Mutation: {
