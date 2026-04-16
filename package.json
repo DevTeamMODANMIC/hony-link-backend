@@ -14,7 +14,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.2.0",
     "graphql": "^16.8.1",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.2.2",
     "@graphql-tools/schema": "^10.0.3",
