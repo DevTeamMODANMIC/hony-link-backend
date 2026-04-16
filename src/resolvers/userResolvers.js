@@ -9,7 +9,7 @@ const userResolvers = {
     // ── me ─────────────────────────────────────────────────────────
     me: async (_, __, context) => {
       const authUser = requireAuth(context);
-      return User.findById(authUser._id);
+      return User.findById(authUser._id).lean();
     },
 
     // ── allUsers — Admin: list all users ───────────────────────────
@@ -65,14 +65,23 @@ const userResolvers = {
       if (maxAge) profileFilter.age  = { ...profileFilter.age, $lte: maxAge };
 
       const profiles = await Profile.find(profileFilter).limit(limit).lean();
-      return User.find({ _id: { $in: profiles.map(p => p.user) } });
+      return User.find({ _id: { $in: profiles.map(p => p.user) } }).lean();
     },
   },
 
   // ── Field resolvers ───────────────────────────────────────────────
   User: {
-    profile:      (parent) => Profile.findOne({ user: parent._id || parent.id }),
-    subscription: (parent) => Subscription.findOne({ user: parent._id || parent.id }),
+    // Use a function that always creates a *new* Mongoose query instance.
+    // parent._id exists on Mongoose docs; parent.id exists on plain objects
+    // from .toObject() / .lean() — support both.
+    profile: (parent) => {
+      const userId = parent._id || parent.id;
+      return Profile.findOne({ user: userId });
+    },
+    subscription: (parent) => {
+      const userId = parent._id || parent.id;
+      return Subscription.findOne({ user: userId });
+    },
   },
 
   Mutation: {

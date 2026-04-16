@@ -17,7 +17,11 @@ const authResolvers = {
       await Subscription.create({ user: user._id, plan: 'free' });
 
       const token = signToken(user._id);
-      return { token, user };
+
+      // Return a plain object so GraphQL field resolvers (User.profile,
+      // User.subscription) can issue fresh Mongoose queries without hitting
+      // the "Query was already executed" error.
+      return { token, user: user.toObject() };
     },
 
     // ── Login ──────────────────────────────────────────────────────
@@ -29,7 +33,8 @@ const authResolvers = {
       if (!valid) throw new Error('Invalid email or password.');
 
       const token = signToken(user._id);
-      return { token, user };
+      // Return plain object for consistency
+      return { token, user: user.toObject() };
     },
   },
 };
