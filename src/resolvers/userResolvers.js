@@ -12,6 +12,12 @@ const userResolvers = {
       return User.findById(authUser._id);
     },
 
+    // ── allUsers — Admin: list all users ───────────────────────────
+    allUsers: async (_, { limit = 20, offset = 0 }, context) => {
+      requireAuth(context);
+      return User.find().skip(offset).limit(limit).lean();
+    },
+
     // ── Swipe feed with smart matching ─────────────────────────────
     swipeFeed: async (_, { limit = 20 }, context) => {
       const authUser = requireAuth(context);
@@ -65,8 +71,8 @@ const userResolvers = {
 
   // ── Field resolvers ───────────────────────────────────────────────
   User: {
-    profile:      (parent) => Profile.findOne({ user: parent._id || parent.id }).exec(),
-    subscription: (parent) => Subscription.findOne({ user: parent._id || parent.id }).exec(),
+    profile:      (parent) => Profile.findOne({ user: parent._id || parent.id }),
+    subscription: (parent) => Subscription.findOne({ user: parent._id || parent.id }),
   },
 
   Mutation: {

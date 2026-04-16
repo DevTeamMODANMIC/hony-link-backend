@@ -7,7 +7,6 @@ const authResolvers = {
   Mutation: {
     // ── Signup ─────────────────────────────────────────────────────
     signup: async (_, { email, password, username }) => {
-      // console.log( email, password, username)
       const exists = await User.findOne({ $or: [{ email }, { username }] });
       if (exists) throw new Error('Email or username already in use.');
 
