@@ -1,7 +1,7 @@
-const User              = require('../models/User');
-const Profile           = require('../models/Profile');
-const Subscription      = require('../models/Subscription');
-const { requireAuth }   = require('../middleware/auth');
+const User = require('../models/User');
+const Profile = require('../models/Profile');
+const Subscription = require('../models/Subscription');
+const { requireAuth } = require('../middleware/auth');
 const { computeMatchScore } = require('../utils/matching');
 
 const userResolvers = {
@@ -9,19 +9,19 @@ const userResolvers = {
     // ── me ─────────────────────────────────────────────────────────
     me: async (_, __, context) => {
       const authUser = requireAuth(context);
-      return User.findById(authUser._id).lean();
+      return await User.findById(authUser._id).lean();
     },
 
     // ── allUsers — Admin: list all users ───────────────────────────
     allUsers: async (_, { limit = 20, offset = 0 }, context) => {
       requireAuth(context);
-      return User.find().skip(offset).limit(limit).lean();
+      return await User.find().skip(offset).limit(limit).lean();
     },
 
     // ── Swipe feed with smart matching ─────────────────────────────
     swipeFeed: async (_, { limit = 20 }, context) => {
       const authUser = requireAuth(context);
-      const Swipe    = require('../models/Swipe');
+      const Swipe = require('../models/Swipe');
 
       const myProfile = await Profile.findOne({ user: authUser._id }).lean();
 
@@ -38,17 +38,21 @@ const userResolvers = {
 
       // Score each candidate, sort descending
       const profileMap = await Profile.find({
-        user: { $in: pool.map(u => u._id) },
+        user: { $in: pool.map((u) => u._id) },
       }).lean();
-      const byUserId = Object.fromEntries(profileMap.map(p => [String(p.user), p]));
 
-      const scored = pool.map(u => ({
-        user:  u,
+      const byUserId = Object.fromEntries(
+        profileMap.map((p) => [String(p.user), p])
+      );
+
+      const scored = pool.map((u) => ({
+        user: u,
         score: computeMatchScore(myProfile, byUserId[String(u._id)] || {}),
       }));
+
       scored.sort((a, b) => b.score - a.score);
 
-      return scored.slice(0, limit).map(s => s.user);
+      return scored.slice(0, limit).map((s) => s.user);
     },
 
     // ── Search users ───────────────────────────────────────────────
@@ -60,27 +64,32 @@ const userResolvers = {
       }).distinct('_id');
 
       const profileFilter = { user: { $in: userIds } };
-      if (city)   profileFilter.city = { $regex: city, $options: 'i' };
-      if (minAge) profileFilter.age  = { ...profileFilter.age, $gte: minAge };
-      if (maxAge) profileFilter.age  = { ...profileFilter.age, $lte: maxAge };
+      if (city) profileFilter.city = { $regex: city, $options: 'i' };
+      if (minAge) profileFilter.age = { ...profileFilter.age, $gte: minAge };
+      if (maxAge) profileFilter.age = { ...profileFilter.age, $lte: maxAge };
 
       const profiles = await Profile.find(profileFilter).limit(limit).lean();
-      return User.find({ _id: { $in: profiles.map(p => p.user) } }).lean();
+
+      return await User.find({
+        _id: { $in: profiles.map((p) => p.user) },
+      }).lean();
     },
   },
 
   // ── Field resolvers ───────────────────────────────────────────────
   User: {
-    // Use a function that always creates a *new* Mongoose query instance.
-    // parent._id exists on Mongoose docs; parent.id exists on plain objects
-    // from .toObject() / .lean() — support both.
-    profile: (parent) => {
-      const userId = parent._id || parent.id;
-      return Profile.findOne({ user: userId });
+    id: (parent) => {
+      return parent._id?.toString() || parent.id;
     },
-    subscription: (parent) => {
+
+    profile: async (parent) => {
       const userId = parent._id || parent.id;
-      return Subscription.findOne({ user: userId });
+      return await Profile.findOne({ user: userId }).lean();
+    },
+
+    subscription: async (parent) => {
+      const userId = parent._id || parent.id;
+      return await Subscription.findOne({ user: userId }).lean();
     },
   },
 
@@ -91,6 +100,7 @@ const userResolvers = {
       const { latitude, longitude, ...rest } = input;
 
       const update = { ...rest, updatedAt: new Date() };
+
       if (latitude !== undefined && longitude !== undefined) {
         update.location = {
           type: 'Point',
@@ -98,11 +108,11 @@ const userResolvers = {
         };
       }
 
-      return Profile.findOneAndUpdate(
+      return await Profile.findOneAndUpdate(
         { user: authUser._id },
         { $set: update },
-        { new: true, upsert: true },
-      );
+        { new: true, upsert: true }
+      ).lean();
     },
   },
 };

@@ -11,17 +11,31 @@ const authResolvers = {
       if (exists) throw new Error('Email or username already in use.');
 
       const user = await User.create({ email, password, username });
+      console.log( `New user` );
+      console.log(user)
 
       // Create blank profile and free subscription
       await Profile.create({ user: user._id });
       await Subscription.create({ user: user._id, plan: 'free' });
-
+      
       const token = signToken(user._id);
-
+      console.log({
+        token,
+        user: {
+          ...user._doc,
+          id: user._id.toString(),
+        },
+      });
       // Return a plain object so GraphQL field resolvers (User.profile,
       // User.subscription) can issue fresh Mongoose queries without hitting
       // the "Query was already executed" error.
-      return { token, user: user.toObject() };
+      return {
+        token,
+        user: {
+          ...user._doc,
+          id: user._id.toString(),
+        },
+      };
     },
 
     // ── Login ──────────────────────────────────────────────────────
