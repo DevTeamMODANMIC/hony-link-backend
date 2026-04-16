@@ -108,6 +108,7 @@ const typeDefs = gql`
   # ── Queries ──────────────────────────────────────────────────────
   type Query {
     me:            User!
+    allUsers(limit: Int, offset: Int): [User!]!
     swipeFeed(limit: Int): [User!]!
     searchUsers(
       q:      String!
