@@ -57,6 +57,10 @@ async function bootstrap() {
     next();
   });
 
+  app.get("/sample", (req, res)=>{
+    return res.send("Hello world");
+  });
+
   // ── Apollo Server ─────────────────────────────────────────────
   const schema = makeExecutableSchema({
     typeDefs,
